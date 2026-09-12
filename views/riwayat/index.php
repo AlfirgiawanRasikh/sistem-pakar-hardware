@@ -1,14 +1,19 @@
 <?php
-include 'config/database.php';
+require_once __DIR__ . '/../../helpers/auth.php';
+requireLogin();
 
-$role = $_SESSION['role'] ?? '';
-$nama_safe = mysqli_real_escape_string($conn, $_SESSION['nama'] ?? '');
+require_once __DIR__ . '/../../config/database.php';
 
-$query = ($role === 'admin') 
-    ? "SELECT * FROM riwayat_diagnosa ORDER BY id_riwayat DESC" 
-    : "SELECT * FROM riwayat_diagnosa WHERE nama_pengguna='$nama_safe' ORDER BY id_riwayat DESC";
-
-$data = mysqli_query($conn, $query);
+if ($_SESSION['role'] === 'admin') {
+    $stmt = mysqli_prepare($conn, 'SELECT * FROM riwayat_diagnosa ORDER BY id_riwayat DESC');
+} else {
+    $idPengguna = positiveId($_SESSION['id_pengguna']);
+    $stmt = mysqli_prepare($conn, 'SELECT * FROM riwayat_diagnosa WHERE id_pengguna=? ORDER BY id_riwayat DESC');
+    mysqli_stmt_bind_param($stmt, 'i', $idPengguna);
+}
+mysqli_stmt_execute($stmt);
+$data = mysqli_stmt_get_result($stmt);
+mysqli_stmt_close($stmt);
 ?>
 
 <div class="content-wrapper">
@@ -28,12 +33,16 @@ $data = mysqli_query($conn, $query);
                         <?php $no = 1; while($row = mysqli_fetch_assoc($data)): ?>
                         <tr>
                             <td class="text-center align-middle"><?= $no++ ?></td>
-                            <td class="align-middle font-weight-bold"><?= htmlspecialchars($row['nama_pengguna']) ?></td>
-                            <td class="align-middle"><span class="badge badge-warning px-2 py-1" style="font-size: 13px;"><?= $row['hasil_kerusakan'] ?></span></td>
+                            <td class="align-middle font-weight-bold"><?= e($row['nama_pengguna']) ?></td>
+                            <td class="align-middle"><span class="badge badge-warning px-2 py-1" style="font-size: 13px;"><?= e($row['hasil_kerusakan']) ?></span></td>
                             <td class="align-middle text-muted"><i class="far fa-calendar-alt mr-1"></i> <?= date('d M Y, H:i', strtotime($row['tanggal'])) ?></td>
                             <td class="text-center align-middle">
-                                <a href="index.php?page=detail_riwayat&id=<?= $row['id_riwayat'] ?>" class="btn btn-info btn-sm shadow-sm"><i class="fas fa-eye"></i> Detail</a>
-                                <a href="controllers/RiwayatController.php?hapus=<?= $row['id_riwayat'] ?>" class="btn btn-danger btn-sm shadow-sm" onclick="return confirm('Yakin nih mau menghapus riwayat diagnosa ini?')"><i class="fas fa-trash"></i> Hapus</a>
+                                <a href="index.php?page=detail_riwayat&id=<?= e($row['id_riwayat']) ?>" class="btn btn-info btn-sm shadow-sm"><i class="fas fa-eye"></i> Detail</a>
+                                <form action="controllers/RiwayatController.php" method="POST" class="d-inline" onsubmit="return confirm('Yakin nih mau menghapus riwayat diagnosa ini?')">
+        <?= csrfField() ?>
+                            <input type="hidden" name="hapus" value="<?= e($row['id_riwayat']) ?>">
+                            <button type="submit" class="btn btn-danger btn-sm shadow-sm"><i class="fas fa-trash"></i> Hapus</button>
+                        </form>
                             </td>
                         </tr>
                         <?php endwhile; ?>

@@ -1,8 +1,8 @@
 <?php
-
-session_start();
-
-include '../config/database.php';
+require_once __DIR__ . '/../helpers/auth.php';
+requireLogin();
+verifyCsrf();
+require_once __DIR__ . '/../config/database.php';
 
 if(!isset($_POST['proses'])){
 
@@ -13,8 +13,10 @@ if(!isset($_POST['proses'])){
     exit;
 }
 
-$gejalaDipilih =
-$_POST['gejala'] ?? [];
+$gejalaDipilih = $_POST['gejala'] ?? [];
+if (!is_array($gejalaDipilih)) {
+    badRequest();
+}
 
 if(count($gejalaDipilih)==0){
 
@@ -31,18 +33,18 @@ if(count($gejalaDipilih)==0){
     exit;
 }
 
+$gejalaDipilih = idList($gejalaDipilih);
+
 /*
 |--------------------------------------------------------------------------
 | AMBIL SEMUA ATURAN
 |--------------------------------------------------------------------------
 */
 
-$aturan = mysqli_query(
-$conn,
-"SELECT *
-FROM aturan
-ORDER BY id_aturan ASC"
-);
+$stmt = mysqli_prepare($conn, 'SELECT * FROM aturan ORDER BY id_aturan ASC');
+mysqli_stmt_execute($stmt);
+$aturan = mysqli_stmt_get_result($stmt);
+mysqli_stmt_close($stmt);
 
 $hasilKerusakan = null;
 
@@ -54,12 +56,11 @@ mysqli_fetch_assoc($aturan)
     $idAturan =
     $r['id_aturan'];
 
-    $detail = mysqli_query(
-    $conn,
-    "SELECT id_gejala
-    FROM detail_aturan
-    WHERE id_aturan='$idAturan'"
-    );
+    $stmt = mysqli_prepare($conn, 'SELECT id_gejala FROM detail_aturan WHERE id_aturan=?');
+    mysqli_stmt_bind_param($stmt, 'i', $idAturan);
+    mysqli_stmt_execute($stmt);
+    $detail = mysqli_stmt_get_result($stmt);
+    mysqli_stmt_close($stmt);
 
     $syarat = [];
 
@@ -126,12 +127,11 @@ if(!$hasilKerusakan){
 |--------------------------------------------------------------------------
 */
 
-$kerusakan = mysqli_query(
-$conn,
-"SELECT *
-FROM kerusakan
-WHERE id_kerusakan='$hasilKerusakan'"
-);
+$stmt = mysqli_prepare($conn, 'SELECT * FROM kerusakan WHERE id_kerusakan=?');
+mysqli_stmt_bind_param($stmt, 'i', $hasilKerusakan);
+mysqli_stmt_execute($stmt);
+$kerusakan = mysqli_stmt_get_result($stmt);
+mysqli_stmt_close($stmt);
 
 $dataKerusakan =
 mysqli_fetch_assoc(
@@ -162,23 +162,11 @@ implode(
 $gejalaDipilih
 );
 
-mysqli_query(
-$conn,
-"INSERT INTO riwayat_diagnosa
-(
-nama_pengguna,
-gejala_dipilih,
-hasil_kerusakan,
-solusi
-)
-VALUES
-(
-'$namaPengguna',
-'$daftarGejala',
-'$namaKerusakan',
-'$solusi'
-)"
-);
+$stmt = mysqli_prepare($conn, 'INSERT INTO riwayat_diagnosa
+    (id_pengguna,nama_pengguna,gejala_dipilih,hasil_kerusakan,solusi) VALUES (?,?,?,?,?)');
+mysqli_stmt_bind_param($stmt, 'issss', $idPengguna, $namaPengguna, $daftarGejala, $namaKerusakan, $solusi);
+mysqli_stmt_execute($stmt);
+mysqli_stmt_close($stmt);
 
 $_SESSION['hasil_kerusakan']
 = $namaKerusakan;

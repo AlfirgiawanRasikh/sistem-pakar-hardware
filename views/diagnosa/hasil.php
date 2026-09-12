@@ -1,4 +1,7 @@
 <?php
+require_once __DIR__ . '/../../helpers/auth.php';
+requireLogin();
+
 // Cek apakah ada session hasil, jika tidak ada kembalikan ke halaman diagnosa
 if(!isset($_SESSION['hasil_kerusakan'])){
     echo "<script>window.location='index.php?page=diagnosa';</script>";
@@ -41,7 +44,7 @@ if(!isset($_SESSION['hasil_kerusakan'])){
                                     <i class="fas fa-exclamation-triangle mr-2"></i> Kerusakan Teridentifikasi:
                                 </h5>
                                 <h4 class="font-weight-bold mb-0 ml-4" style="color: #c82333;">
-                                    <?= $_SESSION['hasil_kerusakan']; ?>
+                                    <?= e($_SESSION['hasil_kerusakan']) ?>
                                 </h4>
                             </div>
 
@@ -50,7 +53,7 @@ if(!isset($_SESSION['hasil_kerusakan'])){
                                     <i class="fas fa-tools mr-2"></i> Solusi Perbaikan:
                                 </h5>
                                 <div class="ml-4 text-justify" style="line-height: 1.6; font-size: 15px;">
-                                    <?= nl2br($_SESSION['solusi']); ?>
+                                    <?= nl2br(e($_SESSION['solusi'])) ?>
                                 </div>
                             </div>
                             

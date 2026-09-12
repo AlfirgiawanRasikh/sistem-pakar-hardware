@@ -1,4 +1,7 @@
 <?php
+require_once __DIR__ . '/../../helpers/auth.php';
+requireLogin();
+
 
 include 'views/layouts/header.php';
 include 'views/layouts/navbar.php';

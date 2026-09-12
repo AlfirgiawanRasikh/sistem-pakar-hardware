@@ -1,9 +1,3 @@
 <?php
-
-session_start();
-
-if(!isset($_SESSION['login'])){
-
-    header("Location: index.php?page=login");
-    exit;
-}
+require_once __DIR__ . '/../helpers/auth.php';
+requireLogin();

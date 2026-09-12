@@ -1,18 +1,19 @@
 <?php
 
-session_start();
+require_once __DIR__ . '/../helpers/auth.php';
 
-require_once '../config/database.php';
+verifyCsrf();
+require_once __DIR__ . '/../config/database.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Location: ../register.php');
     exit;
 }
 
-$nama = trim($_POST['nama_lengkap'] ?? '');
-$username = trim($_POST['username'] ?? '');
-$password = $_POST['password'] ?? '';
-$konfirmasi = $_POST['konfirmasi'] ?? '';
+$nama = trim(inputString($_POST, 'nama_lengkap', false));
+$username = trim(inputString($_POST, 'username', false));
+$password = inputString($_POST, 'password', false);
+$konfirmasi = inputString($_POST, 'konfirmasi', false);
 
 if (
     $nama === '' ||
@@ -39,7 +40,7 @@ if ($password !== $konfirmasi) {
     exit;
 }
 
-if (strlen($password) < 8) {
+if (strlen($password) < 8 || strlen($password) > 72 || strpos($password, "\0") !== false) {
     echo "
     <script>
         alert('Password minimal 8 karakter.');
@@ -97,8 +98,14 @@ mysqli_stmt_bind_param(
     $passwordHash
 );
 
-if (!mysqli_stmt_execute($stmt)) {
-    die('Registrasi gagal.');
+try {
+    mysqli_stmt_execute($stmt);
+} catch (mysqli_sql_exception $error) {
+    if ($error->getCode() === 1062) {
+        http_response_code(409);
+        exit('Username sudah digunakan.');
+    }
+    throw $error;
 }
 
 mysqli_stmt_close($stmt);

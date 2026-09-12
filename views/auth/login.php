@@ -1,3 +1,4 @@
+<?php require_once __DIR__ . '/../../helpers/auth.php'; ?>
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -46,6 +47,7 @@
     <div class="subtitle">Diagnosa Kerusakan Hardware Komputer</div>
 
     <form action="controllers/LoginController.php" method="POST">
+        <?= csrfField() ?>
         <div class="input-group">
             <input type="text" name="username" placeholder="Username" required>
             <i class="fas fa-user icon-left"></i>

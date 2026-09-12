@@ -1,3 +1,7 @@
+<?php
+require_once __DIR__ . '/../../helpers/auth.php';
+requireLogin();
+?>
 <nav class="main-header navbar navbar-expand navbar-white navbar-light">
 
 <ul class="navbar-nav">
@@ -23,7 +27,7 @@ href="#">
 
 <span class="nav-link">
 
-<?= $_SESSION['nama']; ?>
+<?= e($_SESSION['nama']) ?>
 
 </span>
 

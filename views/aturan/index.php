@@ -1,5 +1,8 @@
 <?php
-include 'config/database.php';
+require_once __DIR__ . '/../../helpers/auth.php';
+requireAdmin();
+
+require_once __DIR__ . '/../../config/database.php';
 
 // Tarik master data kerusakan & gejala sekali saja di awal untuk mencegah query berulang
 $q_ker = mysqli_query($conn, "SELECT * FROM kerusakan ORDER BY kode_kerusakan ASC");
@@ -25,7 +28,11 @@ $data = mysqli_query($conn, "SELECT a.id_aturan, a.kode_aturan, a.id_kerusakan, 
             <tbody>
                 <?php $no = 1; while($row = mysqli_fetch_assoc($data)): 
                     // Menggabungkan query detail gejala & selected ke dalam 1 tarikan query
-                    $detail = mysqli_query($conn, "SELECT g.id_gejala, g.kode_gejala FROM detail_aturan d JOIN gejala g ON d.id_gejala = g.id_gejala WHERE d.id_aturan='{$row['id_aturan']}' ORDER BY g.kode_gejala ASC");
+                    $stmt = mysqli_prepare($conn, 'SELECT g.id_gejala, g.kode_gejala FROM detail_aturan d JOIN gejala g ON d.id_gejala = g.id_gejala WHERE d.id_aturan=? ORDER BY g.kode_gejala ASC');
+                    mysqli_stmt_bind_param($stmt, 'i', $row['id_aturan']);
+                    mysqli_stmt_execute($stmt);
+                    $detail = mysqli_stmt_get_result($stmt);
+                    mysqli_stmt_close($stmt);
                     $gejalaList = []; $selected = [];
                     while($g = mysqli_fetch_assoc($detail)){
                         $gejalaList[] = $g['kode_gejala'];
@@ -33,30 +40,35 @@ $data = mysqli_query($conn, "SELECT a.id_aturan, a.kode_aturan, a.id_kerusakan, 
                     }
                 ?>
                 <tr>
-                    <td><?= $no++ ?></td><td><?= $row['kode_aturan'] ?></td><td><?= implode(', ', $gejalaList) ?></td>
-                    <td><?= $row['kode_kerusakan'] ?> - <?= $row['nama_kerusakan'] ?></td>
+                    <td><?= $no++ ?></td><td><?= e($row['kode_aturan']) ?></td><td><?= e(implode(', ', $gejalaList)) ?></td>
+                    <td><?= e($row['kode_kerusakan']) ?> - <?= e($row['nama_kerusakan']) ?></td>
                     <td style="white-space: nowrap;">
-                        <button class="btn btn-warning btn-sm" style="margin-right:5px;" data-toggle="modal" data-target="#edit<?= $row['id_aturan'] ?>">Edit</button>
-                        <a href="controllers/AturanController.php?hapus=<?= $row['id_aturan'] ?>" class="btn btn-danger btn-sm" onclick="return confirm('Yakin ingin menghapus data?')">Hapus</a>
+                        <button class="btn btn-warning btn-sm" style="margin-right:5px;" data-toggle="modal" data-target="#edit<?= e($row['id_aturan']) ?>">Edit</button>
+                        <form action="controllers/AturanController.php" method="POST" class="d-inline" onsubmit="return confirm('Yakin ingin menghapus data?')">
+        <?= csrfField() ?>
+                            <input type="hidden" name="hapus" value="<?= e($row['id_aturan']) ?>">
+                            <button type="submit" class="btn btn-danger btn-sm">Hapus</button>
+                        </form>
                     </td>
                 </tr>
 
-                <div class="modal fade" id="edit<?= $row['id_aturan'] ?>"><div class="modal-dialog modal-lg"><div class="modal-content">
+                <div class="modal fade" id="edit<?= e($row['id_aturan']) ?>"><div class="modal-dialog modal-lg"><div class="modal-content">
                     <form action="controllers/AturanController.php" method="POST">
+        <?= csrfField() ?>
                         <div class="modal-header"><h4 class="modal-title">Edit Aturan</h4><button type="button" class="close" data-dismiss="modal"><span>&times;</span></button></div>
                         <div class="modal-body">
-                            <input type="hidden" name="id_aturan" value="<?= $row['id_aturan'] ?>">
+                            <input type="hidden" name="id_aturan" value="<?= e($row['id_aturan']) ?>">
                             <div class="form-group"><label>Kerusakan</label>
                                 <select name="id_kerusakan" class="form-control" required>
                                     <?php foreach($list_ker as $k): ?>
-                                        <option value="<?= $k['id_kerusakan'] ?>" <?= ($k['id_kerusakan'] == $row['id_kerusakan']) ? 'selected' : '' ?>><?= $k['kode_kerusakan'] ?> - <?= $k['nama_kerusakan'] ?></option>
+                                        <option value="<?= e($k['id_kerusakan']) ?>" <?= ($k['id_kerusakan'] == $row['id_kerusakan']) ? 'selected' : '' ?>><?= e($k['kode_kerusakan']) ?> - <?= e($k['nama_kerusakan']) ?></option>
                                     <?php endforeach; ?>
                                 </select>
                             </div><hr><label>Gejala</label><div class="row">
                                 <?php foreach($list_gej as $g): ?>
                                     <div class="col-md-6"><div class="form-check">
-                                        <input type="checkbox" class="form-check-input" name="id_gejala[]" value="<?= $g['id_gejala'] ?>" <?= in_array($g['id_gejala'], $selected) ? 'checked' : '' ?>>
-                                        <label class="form-check-label"><?= $g['kode_gejala'] ?> - <?= $g['nama_gejala'] ?></label>
+                                        <input type="checkbox" class="form-check-input" name="id_gejala[]" value="<?= e($g['id_gejala']) ?>" <?= in_array($g['id_gejala'], $selected) ? 'checked' : '' ?>>
+                                        <label class="form-check-label"><?= e($g['kode_gejala']) ?> - <?= e($g['nama_gejala']) ?></label>
                                     </div></div>
                                 <?php endforeach; ?>
                             </div>
@@ -72,19 +84,20 @@ $data = mysqli_query($conn, "SELECT a.id_aturan, a.kode_aturan, a.id_kerusakan, 
 
 <div class="modal fade" id="modalTambah"><div class="modal-dialog modal-lg"><div class="modal-content">
     <form action="controllers/AturanController.php" method="POST">
+        <?= csrfField() ?>
         <div class="modal-header"><h4 class="modal-title">Tambah Aturan</h4><button type="button" class="close" data-dismiss="modal"><span>&times;</span></button></div>
         <div class="modal-body">
             <div class="form-group"><label>Kerusakan</label>
                 <select name="id_kerusakan" class="form-control" required>
                     <?php foreach($list_ker as $k): ?>
-                        <option value="<?= $k['id_kerusakan'] ?>"><?= $k['kode_kerusakan'] ?> - <?= $k['nama_kerusakan'] ?></option>
+                        <option value="<?= e($k['id_kerusakan']) ?>"><?= e($k['kode_kerusakan']) ?> - <?= e($k['nama_kerusakan']) ?></option>
                     <?php endforeach; ?>
                 </select>
             </div><hr><label>Gejala</label><div class="row">
                 <?php foreach($list_gej as $g): ?>
                     <div class="col-md-6"><div class="form-check">
-                        <input type="checkbox" class="form-check-input" name="id_gejala[]" value="<?= $g['id_gejala'] ?>">
-                        <label class="form-check-label"><?= $g['kode_gejala'] ?> - <?= $g['nama_gejala'] ?></label>
+                        <input type="checkbox" class="form-check-input" name="id_gejala[]" value="<?= e($g['id_gejala']) ?>">
+                        <label class="form-check-label"><?= e($g['kode_gejala']) ?> - <?= e($g['nama_gejala']) ?></label>
                     </div></div>
                 <?php endforeach; ?>
             </div>

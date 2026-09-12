@@ -1,16 +1,17 @@
 <?php
 
-session_start();
+require_once __DIR__ . '/../helpers/auth.php';
 
-require_once '../config/database.php';
+verifyCsrf();
+require_once __DIR__ . '/../config/database.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Location: ../index.php');
     exit;
 }
 
-$username = trim($_POST['username'] ?? '');
-$password = $_POST['password'] ?? '';
+$username = trim(inputString($_POST, 'username', false));
+$password = inputString($_POST, 'password', false);
 
 if ($username === '' || $password === '') {
     echo "
@@ -74,6 +75,7 @@ if ($loginValid) {
     }
 
     session_regenerate_id(true);
+    $_SESSION = []; // Discard any previous account's result/report and CSRF token.
 
     $_SESSION['login'] = true;
     $_SESSION['id_pengguna'] = $data['id_pengguna'];

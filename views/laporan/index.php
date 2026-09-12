@@ -1,3 +1,7 @@
+<?php
+require_once __DIR__ . '/../../helpers/auth.php';
+requireAdmin();
+?>
 <div class="content-wrapper">
     <section class="content-header"><div class="container-fluid"><h1>Laporan</h1></div></section>
     <section class="content"><div class="container-fluid">
@@ -5,6 +9,7 @@
             <div class="card-header"><h3 class="card-title">Filter Laporan</h3></div>
             <div class="card-body">
                 <form action="controllers/LaporanController.php" method="POST">
+        <?= csrfField() ?>
                     <div class="row">
                         <div class="col-md-4"><label>Jenis Laporan</label>
                             <select name="jenis_laporan" class="form-control" required>

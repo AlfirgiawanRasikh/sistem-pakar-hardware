@@ -1,0 +1,9 @@
+# Apache 2.4 / Laragon. Apply equivalent denies if using another web server.
+<FilesMatch "(?i)(^\.|\.(sql|log|ini|bak|zip|tar|gz)$|^composer\.(json|lock)$)">
+    Require all denied
+</FilesMatch>
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^(?:config|helpers|models|routes|vendor|database|tests)(?:/|$) - [F,L,NC]
+    RewriteRule (^|/)\. - [F,L]
+</IfModule>

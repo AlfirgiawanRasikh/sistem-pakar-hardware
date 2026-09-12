@@ -1,98 +1,29 @@
 <?php
+require_once __DIR__ . '/../helpers/auth.php';
+requireAdmin();
+verifyCsrf();
+require_once __DIR__ . '/../config/database.php';
 
-include '../config/database.php';
-
-/*
-|--------------------------------------------------------------------------
-| TAMBAH
-|--------------------------------------------------------------------------
-*/
-
-if(isset($_POST['tambah'])){
-
-    $kode =
-    $_POST['kode_kerusakan'];
-
-    $nama =
-    $_POST['nama_kerusakan'];
-
-    $solusi =
-    $_POST['solusi'];
-
-    mysqli_query(
-    $conn,
-    "INSERT INTO kerusakan
-    (
-        kode_kerusakan,
-        nama_kerusakan,
-        solusi
-    )
-    VALUES
-    (
-        '$kode',
-        '$nama',
-        '$solusi'
-    )"
-    );
-
-    header(
-    "Location: ../index.php?page=kerusakan"
-    );
-
+if (isset($_POST['tambah']) || isset($_POST['edit'])) {
+    $nama = inputString($_POST, 'nama_kerusakan');
+    $solusi = inputString($_POST, 'solusi');
+    if (isset($_POST['edit'])) {
+        $id = positiveId($_POST['id_kerusakan'] ?? null);
+        $stmt = mysqli_prepare($conn, 'UPDATE kerusakan SET nama_kerusakan=?, solusi=? WHERE id_kerusakan=?');
+        mysqli_stmt_bind_param($stmt, 'ssi', $nama, $solusi, $id);
+    } else {
+        $kode = inputString($_POST, 'kode_kerusakan');
+        $stmt = mysqli_prepare($conn, 'INSERT INTO kerusakan (kode_kerusakan,nama_kerusakan,solusi) VALUES (?,?,?)');
+        mysqli_stmt_bind_param($stmt, 'sss', $kode, $nama, $solusi);
+    }
+} elseif (isset($_POST['hapus'])) {
+    $id = positiveId($_POST['hapus']);
+    $stmt = mysqli_prepare($conn, 'DELETE FROM kerusakan WHERE id_kerusakan=?');
+    mysqli_stmt_bind_param($stmt, 'i', $id);
+} else {
+    badRequest();
 }
-
-/*
-|--------------------------------------------------------------------------
-| EDIT
-|--------------------------------------------------------------------------
-*/
-
-if(isset($_POST['edit'])){
-
-    $id =
-    $_POST['id_kerusakan'];
-
-    $nama =
-    $_POST['nama_kerusakan'];
-
-    $solusi =
-    $_POST['solusi'];
-
-    mysqli_query(
-    $conn,
-    "UPDATE kerusakan SET
-
-    nama_kerusakan='$nama',
-    solusi='$solusi'
-
-    WHERE id_kerusakan='$id'"
-    );
-
-    header(
-    "Location: ../index.php?page=kerusakan"
-    );
-
-}
-
-/*
-|--------------------------------------------------------------------------
-| HAPUS
-|--------------------------------------------------------------------------
-*/
-
-if(isset($_GET['hapus'])){
-
-    $id =
-    $_GET['hapus'];
-
-    mysqli_query(
-    $conn,
-    "DELETE FROM kerusakan
-    WHERE id_kerusakan='$id'"
-    );
-
-    header(
-    "Location: ../index.php?page=kerusakan"
-    );
-
-}
+mysqli_stmt_execute($stmt);
+mysqli_stmt_close($stmt);
+header('Location: ../index.php?page=kerusakan');
+exit;

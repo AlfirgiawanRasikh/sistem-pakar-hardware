@@ -1,4 +1,4 @@
-<?php include 'config/database.php'; ?>
+<?php require_once __DIR__ . '/helpers/auth.php'; ?>
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -43,6 +43,7 @@
     <h2>Registrasi Pengguna</h2>
 
     <form action="controllers/RegisterController.php" method="POST">
+        <?= csrfField() ?>
         <div class="input-group">
             <input type="text" name="nama_lengkap" placeholder="Nama Lengkap" required>
             <i class="fas fa-user icon-left"></i>
@@ -52,12 +53,12 @@
             <i class="fas fa-id-card icon-left"></i>
         </div>
         <div class="input-group">
-            <input type="password" name="password" id="password" placeholder="Password" required>
+            <input type="password" minlength="8" maxlength="72" name="password" id="password" placeholder="Password" required>
             <i class="fas fa-lock icon-left"></i>
             <i class="fas fa-eye toggle-password"></i>
         </div>
         <div class="input-group">
-            <input type="password" name="konfirmasi" id="konfirmasi" placeholder="Konfirmasi Password" required>
+            <input type="password" minlength="8" maxlength="72" name="konfirmasi" id="konfirmasi" placeholder="Konfirmasi Password" required>
             <i class="fas fa-lock icon-left"></i>
             <i class="fas fa-eye toggle-password"></i>
         </div>
