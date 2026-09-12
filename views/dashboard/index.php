@@ -1,5 +1,8 @@
 <?php
-include 'config/database.php';
+require_once __DIR__ . '/../../helpers/auth.php';
+requireLogin();
+
+require_once __DIR__ . '/../../config/database.php';
 
 $role = $_SESSION['role'] ?? 'pengguna';
 $nama = $_SESSION['nama']; 
@@ -18,8 +21,12 @@ if ($role === 'admin') {
         ['bg-danger', $counts['pengguna'], 'Total Pengguna', 'fa-users', 'pengguna']
     ];
 } else {
-    $nama_safe = mysqli_real_escape_string($conn, $nama);
-    $totalDiagnosaUser = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total FROM riwayat_diagnosa WHERE nama_pengguna = '$nama_safe'"))['total'];
+    $idPengguna = positiveId($_SESSION['id_pengguna']);
+    $stmt = mysqli_prepare($conn, 'SELECT COUNT(*) AS total FROM riwayat_diagnosa WHERE id_pengguna=?');
+    mysqli_stmt_bind_param($stmt, 'i', $idPengguna);
+    mysqli_stmt_execute($stmt);
+    $totalDiagnosaUser = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt))['total'];
+    mysqli_stmt_close($stmt);
 }
 ?>
 
@@ -31,10 +38,10 @@ if ($role === 'admin') {
             
             <div class="row">
                 <?php foreach($cards as $k): ?>
-                <div class="col-lg-3 col-6"><div class="small-box <?= $k[0] ?> shadow-sm">
-                    <div class="inner"><h3><?= $k[1] ?></h3><p><?= $k[2] ?></p></div>
-                    <div class="icon"><i class="fas <?= $k[3] ?>"></i></div>
-                    <a href="?page=<?= $k[4] ?>" class="small-box-footer">Lebih Lanjut <i class="fas fa-arrow-circle-right"></i></a>
+                <div class="col-lg-3 col-6"><div class="small-box <?= e($k[0]) ?> shadow-sm">
+                    <div class="inner"><h3><?= e($k[1]) ?></h3><p><?= e($k[2]) ?></p></div>
+                    <div class="icon"><i class="fas <?= e($k[3]) ?>"></i></div>
+                    <a href="?page=<?= e($k[4]) ?>" class="small-box-footer">Lebih Lanjut <i class="fas fa-arrow-circle-right"></i></a>
                 </div></div>
                 <?php endforeach; ?>
             </div>
@@ -44,8 +51,8 @@ if ($role === 'admin') {
                 $infos = [['bg-info', 'fa-stethoscope', 'Total Diagnosa Seluruhnya', $counts['riwayat_diagnosa']], ['bg-secondary', 'fa-calendar-day', 'Diagnosa Hari Ini', $hariIni]];
                 foreach($infos as $i): ?>
                 <div class="col-md-6 col-sm-6 col-12"><div class="info-box shadow-sm">
-                    <span class="info-box-icon <?= $i[0] ?>"><i class="fas <?= $i[1] ?>"></i></span>
-                    <div class="info-box-content"><span class="info-box-text"><?= $i[2] ?></span><span class="info-box-number"><?= $i[3] ?> <small>kali</small></span></div>
+                    <span class="info-box-icon <?= e($i[0]) ?>"><i class="fas <?= e($i[1]) ?>"></i></span>
+                    <div class="info-box-content"><span class="info-box-text"><?= e($i[2]) ?></span><span class="info-box-number"><?= e($i[3]) ?> <small>kali</small></span></div>
                 </div></div>
                 <?php endforeach; ?>
             </div>
@@ -60,8 +67,8 @@ if ($role === 'admin') {
                             $riwayat = mysqli_query($conn, "SELECT * FROM riwayat_diagnosa ORDER BY id_riwayat DESC LIMIT 5");
                             $no = 1; while($r = mysqli_fetch_assoc($riwayat)): ?>
                             <tr>
-                                <td><?= $no++ ?></td><td><b><?= $r['nama_pengguna'] ?></b></td>
-                                <td><span class="badge badge-warning"><?= $r['hasil_kerusakan'] ?></span></td>
+                                <td><?= $no++ ?></td><td><b><?= e($r['nama_pengguna']) ?></b></td>
+                                <td><span class="badge badge-warning"><?= e($r['hasil_kerusakan']) ?></span></td>
                                 <td><small class="text-muted"><i class="fas fa-calendar-alt mr-1"></i> <?= date('d M Y, H:i', strtotime($r['tanggal'])) ?></small></td>
                             </tr>
                             <?php endwhile; ?>
@@ -79,9 +86,9 @@ if ($role === 'admin') {
                             $totDiag = max($counts['riwayat_diagnosa'], 1);
                             while($t = mysqli_fetch_assoc($top)): $persen = round(($t['total'] / $totDiag) * 100); ?>
                             <tr>
-                                <td><?= $t['hasil_kerusakan'] ?></td>
+                                <td><?= e($t['hasil_kerusakan']) ?></td>
                                 <td class="align-middle"><div class="progress progress-xs"><div class="progress-bar bg-danger" style="width: <?= $persen ?>%"></div></div></td>
-                                <td><span class="badge bg-danger"><?= $t['total'] ?></span></td>
+                                <td><span class="badge bg-danger"><?= e($t['total']) ?></span></td>
                             </tr>
                             <?php endwhile; ?>
                         </tbody>
@@ -94,7 +101,7 @@ if ($role === 'admin') {
             <div class="row">
                 <div class="col-lg-8">
                     <div class="card card-primary card-outline shadow-sm"><div class="card-body">
-                        <h3 class="text-primary"><i class="fas fa-smile mr-2"></i> Selamat Datang, <?= htmlspecialchars($nama) ?>!</h3>
+                        <h3 class="text-primary"><i class="fas fa-smile mr-2"></i> Selamat Datang, <?= e($nama) ?>!</h3>
                         <p class="lead mt-3">Di Sistem Pakar Diagnosa Kerusakan Hardware Komputer.</p>
                         <p class="text-justify text-muted">Sistem ini dirancang untuk membantu Anda mengidentifikasi dan mendiagnosa kerusakan pada perangkat keras komputer. Cukup dengan memilih gejala-gejala yang sedang dialami oleh komputer Anda, sistem akan menggunakan basis pengetahuan (aturan) yang ada untuk menarik kesimpulan dan memberikan solusi perbaikan yang tepat.</p>
                         <hr>

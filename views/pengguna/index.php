@@ -1,5 +1,8 @@
 <?php
-include 'config/database.php';
+require_once __DIR__ . '/../../helpers/auth.php';
+requireAdmin();
+
+require_once __DIR__ . '/../../config/database.php';
 $data = mysqli_query($conn, "SELECT * FROM pengguna ORDER BY id_pengguna ASC");
 ?>
 
@@ -16,22 +19,27 @@ $data = mysqli_query($conn, "SELECT * FROM pengguna ORDER BY id_pengguna ASC");
             <tbody>
                 <?php $no = 1; while($row = mysqli_fetch_assoc($data)): ?>
                 <tr>
-                    <td><?= $no++ ?></td><td><?= $row['nama_lengkap'] ?></td><td><?= $row['username'] ?></td>
-                    <td><span class="badge badge-<?= $row['role'] == 'admin' ? 'danger' : 'success' ?>"><?= ucfirst($row['role']) ?></span></td>
+                    <td><?= $no++ ?></td><td><?= e($row['nama_lengkap']) ?></td><td><?= e($row['username']) ?></td>
+                    <td><span class="badge badge-<?= $row['role'] == 'admin' ? 'danger' : 'success' ?>"><?= e(ucfirst($row['role'])) ?></span></td>
                     <td style="white-space: nowrap;">
-                        <button class="btn btn-warning btn-sm" style="margin-right:5px;" data-toggle="modal" data-target="#edit<?= $row['id_pengguna'] ?>">Edit</button>
-                        <a href="controllers/PenggunaController.php?hapus=<?= $row['id_pengguna'] ?>" class="btn btn-danger btn-sm" onclick="return confirm('Yakin ingin menghapus data?')">Hapus</a>
+                        <button class="btn btn-warning btn-sm" style="margin-right:5px;" data-toggle="modal" data-target="#edit<?= e($row['id_pengguna']) ?>">Edit</button>
+                        <form action="controllers/PenggunaController.php" method="POST" class="d-inline" onsubmit="return confirm('Yakin ingin menghapus data?')">
+        <?= csrfField() ?>
+                            <input type="hidden" name="hapus" value="<?= e($row['id_pengguna']) ?>">
+                            <button type="submit" class="btn btn-danger btn-sm">Hapus</button>
+                        </form>
                     </td>
                 </tr>
 
-                <div class="modal fade" id="edit<?= $row['id_pengguna'] ?>"><div class="modal-dialog"><div class="modal-content">
+                <div class="modal fade" id="edit<?= e($row['id_pengguna']) ?>"><div class="modal-dialog"><div class="modal-content">
                     <form action="controllers/PenggunaController.php" method="POST">
+        <?= csrfField() ?>
                         <div class="modal-header"><h4 class="modal-title">Edit Pengguna</h4><button type="button" class="close" data-dismiss="modal"><span>&times;</span></button></div>
                         <div class="modal-body">
-                            <input type="hidden" name="id_pengguna" value="<?= $row['id_pengguna'] ?>">
-                            <div class="form-group"><label>Nama Lengkap</label><input type="text" name="nama_lengkap" class="form-control" value="<?= $row['nama_lengkap'] ?>" required></div>
-                            <div class="form-group"><label>Username</label><input type="text" name="username" class="form-control" value="<?= $row['username'] ?>" required></div>
-                            <div class="form-group"><label>Password Baru</label><input type="password" name="password" class="form-control"><small class="text-muted">Kosongkan jika tidak ingin mengubah password</small></div>
+                            <input type="hidden" name="id_pengguna" value="<?= e($row['id_pengguna']) ?>">
+                            <div class="form-group"><label>Nama Lengkap</label><input type="text" name="nama_lengkap" class="form-control" value="<?= e($row['nama_lengkap']) ?>" required></div>
+                            <div class="form-group"><label>Username</label><input type="text" name="username" class="form-control" value="<?= e($row['username']) ?>" required></div>
+                            <div class="form-group"><label>Password Baru</label><input type="password" minlength="8" maxlength="72" name="password" class="form-control"><small class="text-muted">Kosongkan jika tidak ingin mengubah password</small></div>
                             <div class="form-group"><label>Role</label>
                                 <select name="role" class="form-control">
                                     <option value="admin" <?= $row['role'] == 'admin' ? 'selected' : '' ?>>Admin</option>
@@ -50,11 +58,12 @@ $data = mysqli_query($conn, "SELECT * FROM pengguna ORDER BY id_pengguna ASC");
 
 <div class="modal fade" id="modalTambah"><div class="modal-dialog"><div class="modal-content">
     <form action="controllers/PenggunaController.php" method="POST">
+        <?= csrfField() ?>
         <div class="modal-header"><h4 class="modal-title">Tambah Pengguna</h4><button type="button" class="close" data-dismiss="modal"><span>&times;</span></button></div>
         <div class="modal-body">
             <div class="form-group"><label>Nama Lengkap</label><input type="text" name="nama_lengkap" class="form-control" required></div>
             <div class="form-group"><label>Username</label><input type="text" name="username" class="form-control" required></div>
-            <div class="form-group"><label>Password</label><input type="password" name="password" class="form-control" required></div>
+            <div class="form-group"><label>Password</label><input type="password" minlength="8" maxlength="72" name="password" class="form-control" required></div>
             <div class="form-group"><label>Role</label>
                 <select name="role" class="form-control">
                     <option value="admin">Admin</option>

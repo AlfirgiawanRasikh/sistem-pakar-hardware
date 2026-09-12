@@ -1,3 +1,7 @@
+<?php
+require_once __DIR__ . '/../../helpers/auth.php';
+requireLogin();
+?>
 </div>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>

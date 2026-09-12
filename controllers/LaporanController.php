@@ -1,41 +1,70 @@
 <?php
+require_once __DIR__ . '/../helpers/auth.php';
+requireAdmin();
 
-session_start();
 
-include '../config/database.php';
+
+verifyCsrf();
+require_once __DIR__ . '/../config/database.php';
 
 if(!isset($_POST['tampilkan'])){
     header("Location: ../index.php?page=laporan");
     exit;
 }
 
-$jenis = $_POST['jenis_laporan'];
-$awal = $_POST['tanggal_awal'];
-$akhir = $_POST['tanggal_akhir'];
+$jenis = inputString($_POST, 'jenis_laporan');
+$awal = inputString($_POST, 'tanggal_awal');
+$akhir = inputString($_POST, 'tanggal_akhir');
+foreach ([$awal, $akhir] as $date) {
+    $parsed = DateTimeImmutable::createFromFormat('!Y-m-d', $date);
+    if (!$parsed || $parsed->format('Y-m-d') !== $date) {
+        badRequest();
+    }
+}
+if ($awal > $akhir) {
+    badRequest();
+}
+unset($_SESSION['pdf_html'], $_SESSION['preview_laporan']);
 
 switch($jenis){
     case 'riwayat':
-        $query = mysqli_query($conn, "SELECT nama_pengguna, hasil_kerusakan, tanggal FROM riwayat_diagnosa WHERE DATE(tanggal) BETWEEN '$awal' AND '$akhir' ORDER BY tanggal DESC");
+        $stmt = mysqli_prepare($conn, "SELECT nama_pengguna, hasil_kerusakan, tanggal FROM riwayat_diagnosa WHERE DATE(tanggal) BETWEEN ? AND ? ORDER BY tanggal DESC");
+        mysqli_stmt_bind_param($stmt, 'ss', $awal, $akhir);
+        mysqli_stmt_execute($stmt);
+        $query = mysqli_stmt_get_result($stmt);
+        mysqli_stmt_close($stmt);
         $judul = "Laporan Riwayat Diagnosa";
         break;
 
     case 'pengguna':
-        $query = mysqli_query($conn, "SELECT id_pengguna, nama_lengkap, username, role, created_at FROM pengguna ORDER BY id_pengguna ASC");
+        $stmt = mysqli_prepare($conn, "SELECT id_pengguna, nama_lengkap, username, role, created_at FROM pengguna ORDER BY id_pengguna ASC");
+        mysqli_stmt_execute($stmt);
+        $query = mysqli_stmt_get_result($stmt);
+        mysqli_stmt_close($stmt);
         $judul = "Laporan Data Pengguna";
         break;
 
     case 'gejala':
-        $query = mysqli_query($conn, "SELECT kode_gejala, nama_gejala, jenis FROM gejala ORDER BY kode_gejala ASC");
+        $stmt = mysqli_prepare($conn, "SELECT kode_gejala, nama_gejala, jenis FROM gejala ORDER BY kode_gejala ASC");
+        mysqli_stmt_execute($stmt);
+        $query = mysqli_stmt_get_result($stmt);
+        mysqli_stmt_close($stmt);
         $judul = "Laporan Data Gejala";
         break;
 
     case 'kerusakan':
-        $query = mysqli_query($conn, "SELECT kode_kerusakan, nama_kerusakan, solusi FROM kerusakan ORDER BY kode_kerusakan ASC");
+        $stmt = mysqli_prepare($conn, "SELECT kode_kerusakan, nama_kerusakan, solusi FROM kerusakan ORDER BY kode_kerusakan ASC");
+        mysqli_stmt_execute($stmt);
+        $query = mysqli_stmt_get_result($stmt);
+        mysqli_stmt_close($stmt);
         $judul = "Laporan Data Kerusakan";
         break;
 
     case 'aturan':
-        $query = mysqli_query($conn, "SELECT a.kode_aturan, GROUP_CONCAT(g.kode_gejala ORDER BY g.kode_gejala SEPARATOR ', ') AS gejala, k.nama_kerusakan FROM aturan a JOIN detail_aturan d ON a.id_aturan = d.id_aturan JOIN gejala g ON d.id_gejala = g.id_gejala JOIN kerusakan k ON a.id_kerusakan = k.id_kerusakan GROUP BY a.id_aturan ORDER BY a.kode_aturan ASC");
+        $stmt = mysqli_prepare($conn, "SELECT a.kode_aturan, GROUP_CONCAT(g.kode_gejala ORDER BY g.kode_gejala SEPARATOR ', ') AS gejala, k.nama_kerusakan FROM aturan a JOIN detail_aturan d ON a.id_aturan = d.id_aturan JOIN gejala g ON d.id_gejala = g.id_gejala JOIN kerusakan k ON a.id_kerusakan = k.id_kerusakan GROUP BY a.id_aturan ORDER BY a.kode_aturan ASC");
+        mysqli_stmt_execute($stmt);
+        $query = mysqli_stmt_get_result($stmt);
+        mysqli_stmt_close($stmt);
         $judul = 'Laporan Basis Aturan';
         break;
 
@@ -76,7 +105,7 @@ $header = [
 $html = '
 <div class="card">
     <div class="card-header">
-        <h3 class="card-title">'.$judul.'</h3>
+        <h3 class="card-title">'.e($judul).'</h3>
     </div>
     <div class="card-body">
         <table class="table table-bordered">
@@ -92,8 +121,8 @@ $tabelPdf = '
 foreach($kolom as $k){
     $judulKolom = isset($header[$k]) ? $header[$k] : ucfirst($k);
     
-    $html .= '<th>'.$judulKolom.'</th>';
-    $tabelPdf .= '<th style="border:1px solid #000;padding:8px;background:#dbe5f1;">'.$judulKolom.'</th>';
+    $html .= '<th>'.e($judulKolom).'</th>';
+    $tabelPdf .= '<th style="border:1px solid #000;padding:8px;background:#dbe5f1;">'.e($judulKolom).'</th>';
 }
 
 $html .= '</tr></thead><tbody>';
@@ -109,8 +138,8 @@ do {
     $tabelPdf .= '<td style="border:1px solid #000;padding:6px;text-align:center;">'.$no.'</td>';
 
     foreach($rowAwal as $isi){
-        $html .= '<td>'.$isi.'</td>';
-        $tabelPdf .= '<td style="border:1px solid #000;padding:6px;">'.$isi.'</td>';
+        $html .= '<td>'.e($isi).'</td>';
+        $tabelPdf .= '<td style="border:1px solid #000;padding:6px;">'.e($isi).'</td>';
     }
 
     $html .= '</tr>';
@@ -142,6 +171,8 @@ $bulan = [
 
 $tanggalIndonesia = date('d').' '.$bulan[(int)date('m')].' '.date('Y');
 
+$logo = 'data:image/png;base64,' . base64_encode(file_get_contents(__DIR__ . '/../assets/img/logo.png'));
+
 $_SESSION['pdf_html'] = '
 <style>
 @page{ margin:40px; }
@@ -171,7 +202,7 @@ th,td{ border:1px solid #000; padding:6px; }
                 <div>www.simetri-indonesia.com</div>
             </td>
             <td width="25%" align="right">
-                <img src="http://localhost/sistem-pakar-hardware/assets/img/logo.png" width="120">
+                <img src="'.e($logo).'" width="120">
             </td>
         </tr>
     </table>
@@ -180,7 +211,7 @@ th,td{ border:1px solid #000; padding:6px; }
 <hr>
 
 <div class="judul">
-    <h2>'.$judul.'</h2>
+    <h2>'.e($judul).'</h2>
 </div>
 
 <div class="info">

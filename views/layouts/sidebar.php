@@ -1,4 +1,7 @@
 <?php
+require_once __DIR__ . '/../../helpers/auth.php';
+requireLogin();
+
 $page = isset($_GET['page']) ? $_GET['page'] : 'dashboard';
 $role = isset($_SESSION['role']) ? $_SESSION['role'] : '';
 ?>
@@ -86,10 +89,13 @@ $role = isset($_SESSION['role']) ? $_SESSION['role'] : '';
                 </li>
 
                 <li class="nav-item mt-4">
-                    <a href="logout.php" class="nav-link" style="border-left: 3px solid #dc3545;">
+                    <form action="logout.php" method="POST">
+        <?= csrfField() ?>
+                    <button type="submit" class="nav-link text-left w-100" style="background: transparent; border: 0; border-left: 3px solid #dc3545;">
                         <i class="nav-icon fas fa-power-off text-danger"></i>
                         <p class="text-danger">Logout</p>
-                    </a>
+                    </button>
+                    </form>
                 </li>
 
             </ul>

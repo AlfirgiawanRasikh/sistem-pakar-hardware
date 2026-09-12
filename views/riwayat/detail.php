@@ -1,17 +1,26 @@
 <?php
+require_once __DIR__ . '/../../helpers/auth.php';
+requireLogin();
 
-include 'config/database.php';
 
-$id = $_GET['id'];
+require_once __DIR__ . '/../../config/database.php';
 
-$data = mysqli_query(
-$conn,
-"SELECT *
-FROM riwayat_diagnosa
-WHERE id_riwayat='$id'"
-);
-
-$row = mysqli_fetch_assoc($data);
+$id = positiveId($_GET['id'] ?? null);
+if ($_SESSION['role'] === 'admin') {
+    $stmt = mysqli_prepare($conn, 'SELECT * FROM riwayat_diagnosa WHERE id_riwayat=?');
+    mysqli_stmt_bind_param($stmt, 'i', $id);
+} else {
+    $idPengguna = positiveId($_SESSION['id_pengguna']);
+    $stmt = mysqli_prepare($conn, 'SELECT * FROM riwayat_diagnosa WHERE id_riwayat=? AND id_pengguna=?');
+    mysqli_stmt_bind_param($stmt, 'ii', $id, $idPengguna);
+}
+mysqli_stmt_execute($stmt);
+$row = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
+mysqli_stmt_close($stmt);
+if (!$row) {
+    http_response_code(404);
+    exit('Data tidak ditemukan.');
+}
 
 ?>
 
@@ -57,7 +66,7 @@ Nama Pengguna
 
 <td>
 
-<?= $row['nama_pengguna'] ?>
+<?= e($row['nama_pengguna']) ?>
 
 </td>
 
@@ -86,14 +95,14 @@ foreach($gejalaIds as $idGejala){
 $idGejala =
 trim($idGejala);
 
-$g = mysqli_query(
-$conn,
-"SELECT
-kode_gejala,
-nama_gejala
-FROM gejala
-WHERE id_gejala='$idGejala'"
-);
+if (filter_var($idGejala, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]) === false) {
+    continue;
+}
+$stmt = mysqli_prepare($conn, 'SELECT kode_gejala,nama_gejala FROM gejala WHERE id_gejala=?');
+mysqli_stmt_bind_param($stmt, 'i', $idGejala);
+mysqli_stmt_execute($stmt);
+$g = mysqli_stmt_get_result($stmt);
+mysqli_stmt_close($stmt);
 
 $dg =
 mysqli_fetch_assoc($g);
@@ -101,11 +110,11 @@ mysqli_fetch_assoc($g);
 if($dg){
 
 echo
-$dg['kode_gejala']
+e($dg['kode_gejala'])
 .
 ' - '
 .
-$dg['nama_gejala']
+e($dg['nama_gejala'])
 .
 '<br>';
 
@@ -129,7 +138,7 @@ Kerusakan
 
 <td>
 
-<?= $row['hasil_kerusakan'] ?>
+<?= e($row['hasil_kerusakan']) ?>
 
 </td>
 
@@ -145,9 +154,7 @@ Solusi
 
 <td>
 
-<?= nl2br(
-$row['solusi']
-) ?>
+<?= nl2br(e($row['solusi'])) ?>
 
 </td>
 
@@ -163,7 +170,7 @@ Tanggal Diagnosa
 
 <td>
 
-<?= $row['tanggal'] ?>
+<?= e($row['tanggal']) ?>
 
 </td>
 

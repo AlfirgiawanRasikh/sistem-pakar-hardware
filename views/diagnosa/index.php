@@ -1,5 +1,8 @@
 <?php
-include 'config/database.php';
+require_once __DIR__ . '/../../helpers/auth.php';
+requireLogin();
+
+require_once __DIR__ . '/../../config/database.php';
 $gejala = mysqli_query($conn, "SELECT * FROM gejala ORDER BY kode_gejala ASC");
 ?>
 
@@ -22,6 +25,7 @@ $gejala = mysqli_query($conn, "SELECT * FROM gejala ORDER BY kode_gejala ASC");
             </div>
             
             <form action="controllers/DiagnosaController.php" method="POST">
+        <?= csrfField() ?>
                 <div class="card-body bg-light" style="border-radius: 0 0 10px 10px;">
                     <div class="alert alert-default-info bg-white shadow-sm border-0 mb-4" style="border-left: 4px solid #17a2b8 !important;">
                         <i class="fas fa-info-circle text-info mr-2"></i> Tandai satu atau lebih gejala yang sedang terjadi pada perangkat keras komputer.
@@ -30,10 +34,10 @@ $gejala = mysqli_query($conn, "SELECT * FROM gejala ORDER BY kode_gejala ASC");
                     <div class="row">
                         <?php while($row = mysqli_fetch_assoc($gejala)): ?>
                         <div class="col-md-6 col-lg-4 mb-3"><div class="gejala-box"><div class="custom-control custom-checkbox">
-                            <input class="custom-control-input" type="checkbox" name="gejala[]" value="<?= $row['id_gejala'] ?>" id="g<?= $row['id_gejala'] ?>">
-                            <label class="custom-control-label d-flex align-items-start" for="g<?= $row['id_gejala'] ?>">
-                                <span class="kode-badge"><?= $row['kode_gejala'] ?></span>
-                                <span class="text-sm mt-1" style="line-height: 1.4;"><?= $row['nama_gejala'] ?></span>
+                            <input class="custom-control-input" type="checkbox" name="gejala[]" value="<?= e($row['id_gejala']) ?>" id="g<?= e($row['id_gejala']) ?>">
+                            <label class="custom-control-label d-flex align-items-start" for="g<?= e($row['id_gejala']) ?>">
+                                <span class="kode-badge"><?= e($row['kode_gejala']) ?></span>
+                                <span class="text-sm mt-1" style="line-height: 1.4;"><?= e($row['nama_gejala']) ?></span>
                             </label>
                         </div></div></div>
                         <?php endwhile; ?>

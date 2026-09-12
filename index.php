@@ -1,21 +1,32 @@
 <?php
 
-session_start();
+require_once __DIR__ . '/helpers/auth.php';
 
-if(!isset($_SESSION['login'])){
-
-include 'views/auth/login.php';
-exit;
-
+if (($_SESSION['login'] ?? false) !== true) {
+    include 'views/auth/login.php';
+    exit;
 }
 
+requireLogin();
+$page = is_string($_GET['page'] ?? null) ? $_GET['page'] : 'dashboard';
+
+$adminPages = [
+    'gejala',
+    'kerusakan',
+    'pengguna',
+    'aturan',
+    'laporan',
+];
+
+if (in_array($page, $adminPages, true)) {
+    requireAdmin();
+}
+
+ob_start();
 include 'views/layouts/header.php';
 include 'views/layouts/navbar.php';
 include 'views/layouts/sidebar.php';
 
-$page =
-$_GET['page']
-?? 'dashboard';
 
 switch($page){
 

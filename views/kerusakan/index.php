@@ -1,5 +1,8 @@
 <?php
-include 'config/database.php';
+require_once __DIR__ . '/../../helpers/auth.php';
+requireAdmin();
+
+require_once __DIR__ . '/../../config/database.php';
 
 $kode = mysqli_fetch_assoc(mysqli_query($conn, "SELECT MAX(kode_kerusakan) as k FROM kerusakan"))['k'] ?? null;
 $kodeBaru = "K" . str_pad($kode ? ((int)substr($kode, 1) + 1) : 1, 2, "0", STR_PAD_LEFT);
@@ -19,21 +22,26 @@ $data = mysqli_query($conn, "SELECT * FROM kerusakan ORDER BY kode_kerusakan ASC
             <tbody>
                 <?php $no = 1; while($row = mysqli_fetch_assoc($data)): ?>
                 <tr>
-                    <td><?= $no++ ?></td><td><?= $row['kode_kerusakan'] ?></td><td><?= $row['nama_kerusakan'] ?></td><td><?= $row['solusi'] ?></td>
+                    <td><?= $no++ ?></td><td><?= e($row['kode_kerusakan']) ?></td><td><?= e($row['nama_kerusakan']) ?></td><td><?= e($row['solusi']) ?></td>
                     <td>
-                        <button class="btn btn-warning btn-sm" data-toggle="modal" data-target="#edit<?= $row['id_kerusakan'] ?>">Edit</button>
-                        <a href="controllers/KerusakanController.php?hapus=<?= $row['id_kerusakan'] ?>" class="btn btn-danger btn-sm" onclick="return confirm('Yakin ingin menghapus data?')">Hapus</a>
+                        <button class="btn btn-warning btn-sm" data-toggle="modal" data-target="#edit<?= e($row['id_kerusakan']) ?>">Edit</button>
+                        <form action="controllers/KerusakanController.php" method="POST" class="d-inline" onsubmit="return confirm('Yakin ingin menghapus data?')">
+        <?= csrfField() ?>
+                            <input type="hidden" name="hapus" value="<?= e($row['id_kerusakan']) ?>">
+                            <button type="submit" class="btn btn-danger btn-sm">Hapus</button>
+                        </form>
                     </td>
                 </tr>
 
-                <div class="modal fade" id="edit<?= $row['id_kerusakan'] ?>"><div class="modal-dialog"><div class="modal-content">
+                <div class="modal fade" id="edit<?= e($row['id_kerusakan']) ?>"><div class="modal-dialog"><div class="modal-content">
                     <form action="controllers/KerusakanController.php" method="POST">
+        <?= csrfField() ?>
                         <div class="modal-header"><h4 class="modal-title">Edit Kerusakan</h4><button type="button" class="close" data-dismiss="modal"><span>&times;</span></button></div>
                         <div class="modal-body">
-                            <input type="hidden" name="id_kerusakan" value="<?= $row['id_kerusakan'] ?>">
-                            <div class="form-group"><label>Kode Kerusakan</label><input type="text" name="kode_kerusakan" class="form-control" value="<?= $row['kode_kerusakan'] ?>" readonly></div>
-                            <div class="form-group"><label>Nama Kerusakan</label><input type="text" name="nama_kerusakan" class="form-control" value="<?= $row['nama_kerusakan'] ?>" required></div>
-                            <div class="form-group"><label>Solusi</label><textarea name="solusi" class="form-control" rows="5" required><?= $row['solusi'] ?></textarea></div>
+                            <input type="hidden" name="id_kerusakan" value="<?= e($row['id_kerusakan']) ?>">
+                            <div class="form-group"><label>Kode Kerusakan</label><input type="text" name="kode_kerusakan" class="form-control" value="<?= e($row['kode_kerusakan']) ?>" readonly></div>
+                            <div class="form-group"><label>Nama Kerusakan</label><input type="text" name="nama_kerusakan" class="form-control" value="<?= e($row['nama_kerusakan']) ?>" required></div>
+                            <div class="form-group"><label>Solusi</label><textarea name="solusi" class="form-control" rows="5" required><?= e($row['solusi']) ?></textarea></div>
                         </div>
                         <div class="modal-footer"><button type="submit" name="edit" class="btn btn-warning">Update</button><button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button></div>
                     </form>
@@ -46,10 +54,11 @@ $data = mysqli_query($conn, "SELECT * FROM kerusakan ORDER BY kode_kerusakan ASC
 
 <div class="modal fade" id="modalTambah"><div class="modal-dialog"><div class="modal-content">
     <form action="controllers/KerusakanController.php" method="POST">
+        <?= csrfField() ?>
         <div class="modal-header"><h4 class="modal-title">Tambah Kerusakan</h4><button type="button" class="close" data-dismiss="modal"><span>&times;</span></button></div>
         <div class="modal-body">
-            <input type="hidden" name="kode_kerusakan" value="<?= $kodeBaru ?>">
-            <div class="form-group"><label>Kode Kerusakan</label><input type="text" class="form-control" value="<?= $kodeBaru ?>" readonly></div>
+            <input type="hidden" name="kode_kerusakan" value="<?= e($kodeBaru) ?>">
+            <div class="form-group"><label>Kode Kerusakan</label><input type="text" class="form-control" value="<?= e($kodeBaru) ?>" readonly></div>
             <div class="form-group"><label>Nama Kerusakan</label><input type="text" name="nama_kerusakan" class="form-control" required></div>
             <div class="form-group"><label>Solusi</label><textarea name="solusi" class="form-control" rows="5" required></textarea></div>
         </div>
